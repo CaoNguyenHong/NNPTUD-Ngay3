@@ -1,36 +1,23 @@
 const API_URL = "https://api.escuelajs.co/api/v1/products";
-
 const tableBody = document.getElementById("productTable");
-const pagination = document.getElementById("pagination");
-const pageSizeSelect = document.getElementById("pageSize");
 
 let products = [];
-let currentPage = 1;
-let pageSize = Number(pageSizeSelect.value);
+let titleAsc = true;
+let priceAsc = true;
 
-// Gọi API lấy dữ liệu
+// Gọi API
 fetch(API_URL)
     .then(response => response.json())
     .then(data => {
         products = data;
-        render();
+        renderProducts(products);
     });
 
-// Render tổng
-function render() {
-    renderTable();
-    renderPagination();
-}
-
-// Render bảng theo trang
-function renderTable() {
+// Render bảng
+function renderProducts(data) {
     tableBody.innerHTML = "";
 
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    const pageData = products.slice(start, end);
-
-    pageData.forEach(product => {
+    data.forEach(product => {
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
@@ -50,30 +37,30 @@ function renderTable() {
     });
 }
 
-// Render pagination
-function renderPagination() {
-    pagination.innerHTML = "";
+// Sort theo Title
+function sortByTitle() {
+    products.sort((a, b) => {
+        if (a.title.toLowerCase() < b.title.toLowerCase()) {
+            return titleAsc ? -1 : 1;
+        }
+        if (a.title.toLowerCase() > b.title.toLowerCase()) {
+            return titleAsc ? 1 : -1;
+        }
+        return 0;
+    });
 
-    const totalPages = Math.ceil(products.length / pageSize);
-
-    for (let i = 1; i <= totalPages; i++) {
-        const li = document.createElement("li");
-        li.className = `page-item ${i === currentPage ? "active" : ""}`;
-
-        li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-
-        li.onclick = function () {
-            currentPage = i;
-            render();
-        };
-
-        pagination.appendChild(li);
-    }
+    titleAsc = !titleAsc;
+    renderProducts(products);
 }
 
-// Đổi số dòng / trang
-pageSizeSelect.addEventListener("change", function () {
-    pageSize = Number(this.value);
-    currentPage = 1;
-    render();
-});
+// Sort theo Price
+function sortByPrice() {
+    products.sort((a, b) => {
+        return priceAsc
+            ? a.price - b.price
+            : b.price - a.price;
+    });
+
+    priceAsc = !priceAsc;
+    renderProducts(products);
+}
