@@ -5,15 +5,15 @@ let products = [];
 let titleAsc = true;
 let priceAsc = true;
 
-// Gọi API
+// ===== FETCH API =====
 fetch(API_URL)
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
         products = data;
         renderProducts(products);
     });
 
-// Render bảng
+// ===== RENDER TABLE =====
 function renderProducts(data) {
     tableBody.innerHTML = "";
 
@@ -37,7 +37,7 @@ function renderProducts(data) {
     });
 }
 
-// Sort theo Title
+// ===== SORT TITLE =====
 function sortByTitle() {
     products.sort((a, b) => {
         if (a.title.toLowerCase() < b.title.toLowerCase()) {
@@ -53,14 +53,37 @@ function sortByTitle() {
     renderProducts(products);
 }
 
-// Sort theo Price
+// ===== SORT PRICE =====
 function sortByPrice() {
-    products.sort((a, b) => {
-        return priceAsc
-            ? a.price - b.price
-            : b.price - a.price;
-    });
+    products.sort((a, b) =>
+        priceAsc ? a.price - b.price : b.price - a.price
+    );
 
     priceAsc = !priceAsc;
     renderProducts(products);
+}
+
+// ===== EXPORT CSV (VIEW HIỆN TẠI) =====
+function exportCSV() {
+    let csv = "ID,Title,Price,Category,Image\n";
+
+    products.forEach(p => {
+        csv += [
+            p.id,
+            `"${p.title.replace(/"/g, '""')}"`,
+            p.price,
+            `"${p.category?.name || ""}"`,
+            `"${p.images?.[0] || ""}"`
+        ].join(",") + "\n";
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "products.csv";
+    a.click();
+
+    URL.revokeObjectURL(url);
 }
