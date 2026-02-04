@@ -1,30 +1,37 @@
 const API_URL = "https://api.escuelajs.co/api/v1/products";
-const tableBody = document.getElementById("productTable");
 
-// Gọi API
+const tableBody = document.getElementById("productTable");
+const pagination = document.getElementById("pagination");
+const pageSizeSelect = document.getElementById("pageSize");
+
+let products = [];
+let currentPage = 1;
+let pageSize = Number(pageSizeSelect.value);
+
+// Gọi API lấy dữ liệu
 fetch(API_URL)
     .then(response => response.json())
-    .then(products => {
-        renderProducts(products);
-    })
-    .catch(error => {
-        console.error("Lỗi khi gọi API:", error);
+    .then(data => {
+        products = data;
+        render();
     });
 
-// Render bảng + tooltip description
-function renderProducts(products) {
+// Render tổng
+function render() {
+    renderTable();
+    renderPagination();
+}
+
+// Render bảng theo trang
+function renderTable() {
     tableBody.innerHTML = "";
 
-    products.forEach(product => {
-        const tr = document.createElement("tr");
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageData = products.slice(start, end);
 
-        // Gắn tooltip cho cả dòng
-        tr.setAttribute("data-bs-toggle", "tooltip");
-        tr.setAttribute("data-bs-placement", "top");
-        tr.setAttribute(
-            "title",
-            product.description || "No description"
-        );
+    pageData.forEach(product => {
+        const tr = document.createElement("tr");
 
         tr.innerHTML = `
             <td>${product.id}</td>
@@ -32,9 +39,8 @@ function renderProducts(products) {
             <td>${product.price}</td>
             <td>${product.category?.name || ""}</td>
             <td>
-                <img 
+                <img
                     src="${product.images?.[0] || ""}"
-                    alt="product image"
                     style="width:60px; height:60px; object-fit:cover;"
                 >
             </td>
@@ -42,8 +48,32 @@ function renderProducts(products) {
 
         tableBody.appendChild(tr);
     });
-
-    // Khởi tạo tooltip (bắt buộc)
-    const tooltipList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    tooltipList.forEach(el => new bootstrap.Tooltip(el));
 }
+
+// Render pagination
+function renderPagination() {
+    pagination.innerHTML = "";
+
+    const totalPages = Math.ceil(products.length / pageSize);
+
+    for (let i = 1; i <= totalPages; i++) {
+        const li = document.createElement("li");
+        li.className = `page-item ${i === currentPage ? "active" : ""}`;
+
+        li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+
+        li.onclick = function () {
+            currentPage = i;
+            render();
+        };
+
+        pagination.appendChild(li);
+    }
+}
+
+// Đổi số dòng / trang
+pageSizeSelect.addEventListener("change", function () {
+    pageSize = Number(this.value);
+    currentPage = 1;
+    render();
+});
