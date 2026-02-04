@@ -5,7 +5,8 @@ let products = [];
 let titleAsc = true;
 let priceAsc = true;
 
-const modal = new bootstrap.Modal(document.getElementById("productModal"));
+const viewModal = new bootstrap.Modal(document.getElementById("productModal"));
+const createModal = new bootstrap.Modal(document.getElementById("createModal"));
 
 // ===== FETCH API =====
 fetch(API_URL)
@@ -21,8 +22,7 @@ function renderProducts(data) {
 
     data.forEach(product => {
         const tr = document.createElement("tr");
-
-        tr.onclick = () => openModal(product);
+        tr.onclick = () => openViewModal(product);
 
         tr.innerHTML = `
             <td>${product.id}</td>
@@ -58,18 +58,17 @@ function sortByPrice() {
     renderProducts(products);
 }
 
-// ===== MODAL =====
-function openModal(product) {
+// ===== VIEW + EDIT =====
+function openViewModal(product) {
     document.getElementById("modalId").value = product.id;
     document.getElementById("modalTitle").value = product.title;
     document.getElementById("modalPrice").value = product.price;
     document.getElementById("modalDescription").value = product.description;
     document.getElementById("modalImage").value = product.images?.[0] || "";
 
-    modal.show();
+    viewModal.show();
 }
 
-// ===== UPDATE PRODUCT (PUT API) =====
 function updateProduct() {
     const id = document.getElementById("modalId").value;
 
@@ -87,13 +86,45 @@ function updateProduct() {
     })
         .then(res => res.json())
         .then(updated => {
-            alert("Update thành công (fake API)");
-
-            // update local data
             const index = products.findIndex(p => p.id == id);
             products[index] = { ...products[index], ...updated };
 
-            modal.hide();
+            viewModal.hide();
+            renderProducts(products);
+        });
+}
+
+// ===== CREATE PRODUCT (POST API) =====
+function openCreateModal() {
+    document.getElementById("createTitle").value = "";
+    document.getElementById("createPrice").value = "";
+    document.getElementById("createDescription").value = "";
+    document.getElementById("createCategory").value = 1;
+    document.getElementById("createImage").value = "";
+
+    createModal.show();
+}
+
+function createProduct() {
+    const payload = {
+        title: document.getElementById("createTitle").value,
+        price: Number(document.getElementById("createPrice").value),
+        description: document.getElementById("createDescription").value,
+        categoryId: Number(document.getElementById("createCategory").value),
+        images: [document.getElementById("createImage").value]
+    };
+
+    fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    })
+        .then(res => res.json())
+        .then(newProduct => {
+            alert("Tạo sản phẩm thành công (fake API)");
+
+            products.unshift(newProduct);
+            createModal.hide();
             renderProducts(products);
         });
 }
