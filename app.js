@@ -5,6 +5,8 @@ let products = [];
 let titleAsc = true;
 let priceAsc = true;
 
+const modal = new bootstrap.Modal(document.getElementById("productModal"));
+
 // ===== FETCH API =====
 fetch(API_URL)
     .then(res => res.json())
@@ -20,16 +22,16 @@ function renderProducts(data) {
     data.forEach(product => {
         const tr = document.createElement("tr");
 
+        tr.onclick = () => openModal(product);
+
         tr.innerHTML = `
             <td>${product.id}</td>
             <td>${product.title}</td>
             <td>${product.price}</td>
             <td>${product.category?.name || ""}</td>
             <td>
-                <img
-                    src="${product.images?.[0] || ""}"
-                    style="width:60px; height:60px; object-fit:cover;"
-                >
+                <img src="${product.images?.[0] || ""}"
+                     style="width:60px;height:60px;object-fit:cover;">
             </td>
         `;
 
@@ -37,33 +39,66 @@ function renderProducts(data) {
     });
 }
 
-// ===== SORT TITLE =====
+// ===== SORT =====
 function sortByTitle() {
-    products.sort((a, b) => {
-        if (a.title.toLowerCase() < b.title.toLowerCase()) {
-            return titleAsc ? -1 : 1;
-        }
-        if (a.title.toLowerCase() > b.title.toLowerCase()) {
-            return titleAsc ? 1 : -1;
-        }
-        return 0;
-    });
-
+    products.sort((a, b) =>
+        titleAsc
+            ? a.title.localeCompare(b.title)
+            : b.title.localeCompare(a.title)
+    );
     titleAsc = !titleAsc;
     renderProducts(products);
 }
 
-// ===== SORT PRICE =====
 function sortByPrice() {
     products.sort((a, b) =>
         priceAsc ? a.price - b.price : b.price - a.price
     );
-
     priceAsc = !priceAsc;
     renderProducts(products);
 }
 
-// ===== EXPORT CSV (VIEW HIỆN TẠI) =====
+// ===== MODAL =====
+function openModal(product) {
+    document.getElementById("modalId").value = product.id;
+    document.getElementById("modalTitle").value = product.title;
+    document.getElementById("modalPrice").value = product.price;
+    document.getElementById("modalDescription").value = product.description;
+    document.getElementById("modalImage").value = product.images?.[0] || "";
+
+    modal.show();
+}
+
+// ===== UPDATE PRODUCT (PUT API) =====
+function updateProduct() {
+    const id = document.getElementById("modalId").value;
+
+    const payload = {
+        title: document.getElementById("modalTitle").value,
+        price: Number(document.getElementById("modalPrice").value),
+        description: document.getElementById("modalDescription").value,
+        images: [document.getElementById("modalImage").value]
+    };
+
+    fetch(`${API_URL}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    })
+        .then(res => res.json())
+        .then(updated => {
+            alert("Update thành công (fake API)");
+
+            // update local data
+            const index = products.findIndex(p => p.id == id);
+            products[index] = { ...products[index], ...updated };
+
+            modal.hide();
+            renderProducts(products);
+        });
+}
+
+// ===== EXPORT CSV =====
 function exportCSV() {
     let csv = "ID,Title,Price,Category,Image\n";
 
@@ -79,11 +114,9 @@ function exportCSV() {
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
     a.href = url;
     a.download = "products.csv";
     a.click();
-
     URL.revokeObjectURL(url);
 }
